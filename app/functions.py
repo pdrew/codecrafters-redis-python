@@ -11,6 +11,9 @@ class RESPBuffer:
     def partition(self, delimiter: bytes):
         b, _, self.buffer = self.buffer.partition(delimiter)
         return b
+    
+    def is_not_empty(self) -> bool:
+        return len(self.buffer) > 0
 
 def decode(buffer: RESPBuffer):
     first_char = buffer.read(1)

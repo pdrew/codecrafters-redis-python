@@ -34,10 +34,11 @@ class Server:
 
             buffer = RESPBuffer(data)
 
-            command, args = decode_command(buffer)
+            while buffer.is_not_empty():
+                command, args = decode_command(buffer)
 
-            for handler in self.handlers[command]:
-                handler(client_socket, args)
+                for handler in self.handlers[command]:
+                    handler(client_socket, args)
 
         print("closing client socket")
         client_socket.close()

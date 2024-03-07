@@ -12,6 +12,7 @@ class Server:
             b'ECHO': [handle_echo],
             b'SET': [lambda socket, args: handle_set(socket, args, self.database)],
             b'GET': [lambda socket, args: handle_get(socket, args, self.database)],
+            b'INFO': [handle_info]
         }
 
     def start(self, port: int) -> None:

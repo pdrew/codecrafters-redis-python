@@ -38,3 +38,6 @@ def handle_get(socket: socket, args: list[bytes], database: dict) -> None:
             response = encode_simple_string(value)
     
     socket.sendall(response)
+
+def handle_info(socket: socket, args: list[bytes]) -> None:
+    socket.sendall(encode_bulk_string(["role:master"]))

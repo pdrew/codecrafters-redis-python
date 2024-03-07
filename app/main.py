@@ -7,8 +7,16 @@ def main():
 
     # Uncomment this to pass the first stage
     #
-    server_socket = socket.create_server(("localhost", 6379), reuse_port=True)
-    server_socket.accept() # wait for client
+    port = 6379
+
+    with socket(AF_INET, SOCK_STREAM) as s:
+        s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        s.bind(('', port))
+        s.listen()
+
+        print(f"Listening on port {port}")
+
+        s.accept()
 
     
 

@@ -18,7 +18,7 @@ def main():
     config = {
         ROLE:  FOLLOWER_ROLE if args.replicaof else LEADER_ROLE,
         LEADER_HOST: leader_host,
-        LEADER_PORT: leader_port,
+        LEADER_PORT: int(leader_port) if leader_port else leader_port,
         REPLID: "8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb",
         REPLOFFSET: 0,
     }

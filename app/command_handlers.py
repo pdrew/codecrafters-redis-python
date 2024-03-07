@@ -52,7 +52,9 @@ def handle_replconf(socket: socket, args: list[bytes], config: dict) -> None:
     if config[ROLE] is LEADER_ROLE:
         socket.sendall(encode_simple_string("OK"))
 
-def handle_psync(socket: socket, args: list[bytes], config: dict) -> None:
+def handle_psync(socket: socket, args: list[bytes], config: dict[str, str|int], replicas: dict[socket, int]) -> None:
     if config[ROLE] is LEADER_ROLE:
         socket.sendall(encode_simple_string(f"FULLRESYNC {config[REPLID]} {config[REPLOFFSET]}"))
         socket.sendall(encode_rdb_file(EMPTY_RDB_FILE_B64))
+        print(f"adding replica: {socket.getsockname()}")
+        replicas.setdefault(socket, 0)

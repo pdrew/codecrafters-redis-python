@@ -8,6 +8,7 @@ class Server:
     def __init__(self, config: dict) -> None:
         self._config = config
         self._database = {}
+        self._replicas = {}
         self._handlers = {
             b'PING': [handle_ping],
             b'ECHO': [handle_echo],
@@ -15,7 +16,7 @@ class Server:
             b'GET': [lambda socket, args: handle_get(socket, args, self._database)],
             b'INFO': [lambda socket, args: handle_info(socket, args, self._config)],
             b'REPLCONF': [lambda socket, args: handle_replconf(socket, args, self._config)],
-            b'PSYNC': [lambda socket, args: handle_psync(socket, args, self._config)]
+            b'PSYNC': [lambda socket, args: handle_psync(socket, args, self._config, self._replicas)]
         }
 
     def start(self, port: int) -> None:
@@ -71,6 +72,11 @@ class Server:
 
                 for handler in self._handlers[command]:
                     handler(client_socket, args)
+
+                if command in WRITE_COMMANDS:
+                    for i, replica_socket in enumerate(self._replicas):
+                        print(f"propagating {command} command to replica {i}: {replica_socket.getsockname()}")
+                        replica_socket.sendall(encode_array([command] + args))
 
         print("closing client socket")
         client_socket.close()

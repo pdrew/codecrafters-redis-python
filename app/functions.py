@@ -33,7 +33,7 @@ def decode(buffer: RESPBuffer):
     else:
         raise Exception(f"Unknown RESP type: {first_char}")
 
-def decode_command(buffer: RESPBuffer) -> tuple[str, list[str]]:
+def decode_command(buffer: RESPBuffer) -> tuple[bytes, list[bytes]]:
     decoded = decode(buffer)
 
     return decoded[0].upper(), decoded[1:]

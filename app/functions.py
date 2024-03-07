@@ -20,7 +20,7 @@ def decode(buffer: RESPBuffer):
     first_char = buffer.read(1)
 
     if first_char == b'*':
-        n = int(buffer.partition(b'\r\n').decode())
+        n = int(buffer.partition(b'\r\n').decode(ENCODING))
         return [decode(buffer) for _ in range(n)]
     elif first_char == b'$':
         n = int(buffer.partition(b'\r\n'))
@@ -29,11 +29,11 @@ def decode(buffer: RESPBuffer):
         if buffer.read(2) != b'\r\n':
             raise Exception("Invalid RESP request")
             
-        return bulk_string
+        return bulk_string.decode(ENCODING)
     else:
         raise Exception(f"Unknown RESP type: {first_char}")
 
-def decode_command(buffer: RESPBuffer) -> tuple[bytes, list[bytes]]:
+def decode_command(buffer: RESPBuffer) -> tuple[str, list[str]]:
     decoded = decode(buffer)
 
     return decoded[0].upper(), decoded[1:]

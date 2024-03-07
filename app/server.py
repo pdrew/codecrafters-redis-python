@@ -10,13 +10,13 @@ class Server:
         self._database = {}
         self._replicas = {}
         self._handlers = {
-            b'PING': [handle_ping],
-            b'ECHO': [handle_echo],
-            b'SET': [lambda socket, args: handle_set(socket, args, self._database)],
-            b'GET': [lambda socket, args: handle_get(socket, args, self._database)],
-            b'INFO': [lambda socket, args: handle_info(socket, args, self._config)],
-            b'REPLCONF': [lambda socket, args: handle_replconf(socket, args, self._config)],
-            b'PSYNC': [lambda socket, args: handle_psync(socket, args, self._config, self._replicas)]
+            'PING': [handle_ping],
+            'ECHO': [handle_echo],
+            'SET': [lambda socket, args: handle_set(socket, args, self._database)],
+            'GET': [lambda socket, args: handle_get(socket, args, self._database)],
+            'INFO': [lambda socket, args: handle_info(socket, args, self._config)],
+            'REPLCONF': [lambda socket, args: handle_replconf(socket, args, self._config)],
+            'PSYNC': [lambda socket, args: handle_psync(socket, args, self._config, self._replicas)]
         }
 
     def start(self, port: int) -> None:

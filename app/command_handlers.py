@@ -3,27 +3,27 @@ from app.functions import encode_simple_string, encode_bulk_string, encode_rdb_f
 from app.constants import ENCODING, ROLE, LEADER_ROLE, REPLID, REPLOFFSET, EMPTY_RDB_FILE_B64
 from time import time
 
-def handle_ping(socket: socket, args: list[bytes]) -> None:
+def handle_ping(socket: socket, args: list[str]) -> None:
     response = encode_simple_string("PONG")
     socket.sendall(response)
 
-def handle_echo(socket: socket, args: list[bytes]) -> None:
-    message = ' '.join([b.decode(ENCODING) for b in args])
+def handle_echo(socket: socket, args: list[str]) -> None:
+    message = ' '.join([s for s in args])
     response = encode_simple_string(message)
     socket.sendall(response)
 
-def handle_set(socket: socket, args: list[bytes], database: dict) -> None:
-    key = args.pop(0).decode(ENCODING)
-    value = args.pop(0).decode(ENCODING)
+def handle_set(socket: socket, args: list[str], database: dict) -> None:
+    key = args.pop(0)
+    value = args.pop(0)
 
-    expiry = (round(time() * 1000) + int(args[1].decode(ENCODING))) if args and args[0].upper() == b'PX' else None
+    expiry = (round(time() * 1000) + int(args[1])) if args and args[0].upper() == 'PX' else None
 
     database[key] = (value, expiry)
     response = encode_simple_string("OK")
     socket.sendall(response)
 
-def handle_get(socket: socket, args: list[bytes], database: dict) -> None:
-    key = args[0].decode(ENCODING)
+def handle_get(socket: socket, args: list[str], database: dict) -> None:
+    key = args[0]
 
     response = encode_bulk_string(None)
 
@@ -39,7 +39,7 @@ def handle_get(socket: socket, args: list[bytes], database: dict) -> None:
     
     socket.sendall(response)
 
-def handle_info(socket: socket, args: list[bytes], config: dict) -> None:
+def handle_info(socket: socket, args: list[str], config: dict) -> None:
     info = [f"{ROLE}:{config[ROLE]}"]
     
     if config[ROLE] is LEADER_ROLE:
@@ -48,11 +48,11 @@ def handle_info(socket: socket, args: list[bytes], config: dict) -> None:
 
     socket.sendall(encode_bulk_string(info))
 
-def handle_replconf(socket: socket, args: list[bytes], config: dict) -> None:
+def handle_replconf(socket: socket, args: list[str], config: dict) -> None:
     if config[ROLE] is LEADER_ROLE:
         socket.sendall(encode_simple_string("OK"))
 
-def handle_psync(socket: socket, args: list[bytes], config: dict[str, str|int], replicas: dict[socket, int]) -> None:
+def handle_psync(socket: socket, args: list[str], config: dict[str, str|int], replicas: dict[socket, int]) -> None:
     if config[ROLE] is LEADER_ROLE:
         socket.sendall(encode_simple_string(f"FULLRESYNC {config[REPLID]} {config[REPLOFFSET]}"))
         socket.sendall(encode_rdb_file(EMPTY_RDB_FILE_B64))

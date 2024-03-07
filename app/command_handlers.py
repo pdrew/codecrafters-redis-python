@@ -13,10 +13,10 @@ def handle_echo(socket: socket, args: list[str]) -> None:
     socket.sendall(response)
 
 def handle_set(socket: socket, args: list[str], database: dict) -> None:
-    key = args.pop(0)
-    value = args.pop(0)
+    key = args[0]
+    value = args[1]
 
-    expiry = (round(time() * 1000) + int(args[1])) if args and args[0].upper() == 'PX' else None
+    expiry = (round(time() * 1000) + int(args[3])) if len(args) > 3 and args[2].upper() == 'PX' else None
 
     database[key] = (value, expiry)
     response = encode_simple_string("OK")

@@ -26,10 +26,13 @@ def decode(buffer: RESPBuffer):
         n = int(buffer.partition(b'\r\n'))
         bulk_string = buffer.read(n)
         
-        if buffer.read(2) != b'\r\n':
+        if not bulk_string.startswith(b'REDIS0011') and buffer.read(2) != b'\r\n':
             raise Exception("Invalid RESP request")
             
         return bulk_string.decode(ENCODING)
+    elif first_char == b'+':
+        simple_string = buffer.partition(b'\r\n').decode(ENCODING)
+        return simple_string
     else:
         raise Exception(f"Unknown RESP type: {first_char}")
 

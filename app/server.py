@@ -53,7 +53,7 @@ class Server:
 
         s.sendall(encode_array(["PSYNC", "?", "-1"]))
 
-        thread = Thread(target=self._on_leader_request, args=(s), daemon=True)
+        thread = Thread(target=self._on_leader_request, args=(s,), daemon=True)
         thread.start()
 
     def _on_client_request(self, client_socket: socket, addr: tuple[str, int]) -> None:
@@ -70,12 +70,16 @@ class Server:
             while buffer.is_not_empty():
                 command, args = decode_command(buffer)
 
+                if command not in self._handlers:
+                    continue
+
                 for handler in self._handlers[command]:
                     handler(client_socket, args)
 
                 if command in WRITE_COMMANDS:
                     for i, replica_socket in enumerate(self._replicas):
                         print(f"propagating {command} command to replica {i}: {replica_socket.getsockname()}")
+                        print(encode_array([command] + args))
                         replica_socket.sendall(encode_array([command] + args))
 
         print("closing client socket")
@@ -89,6 +93,17 @@ class Server:
                 break
             
             print(f"received request from leader {leader_socket.getsockname()}: {data}")
+
+            buffer = RESPBuffer(data)
+
+            while buffer.is_not_empty():
+                command, args = decode_command(buffer)
+
+                if command not in self._handlers:
+                    continue
+
+                for handler in self._handlers[command]:
+                    handler(leader_socket, args)
 
         print("closing leader socket")
         leader_socket.close()

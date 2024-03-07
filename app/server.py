@@ -6,7 +6,8 @@ from app.command_handlers import *
 class Server:
     def __init__(self) -> None:
         self.handlers = {
-            b'PING': [handle_ping]
+            b'PING': [handle_ping],
+            b'ECHO': [handle_echo],
         }
 
     def start(self, port: int) -> None:

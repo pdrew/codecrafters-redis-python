@@ -41,12 +41,18 @@ class Server:
             ["PING"],
             ["REPLCONF", "listening-port", port],
             ["REPLCONF", "capa", "psync2"],
+            ["REPLCONF", "capa", "psync2"],
         ]
 
         for p in payload:
             s.sendall(encode_array(p))
             response = s.recv(1024)
             print(response)
+
+        s.sendall(encode_array(["PSYNC", "?", "-1"]))
+
+        thread = Thread(target=self._on_client_request, args=(s), daemon=True)
+        thread.start()
 
     def _on_client_request(self, client_socket: socket, addr: tuple[str, int]) -> None:
         while True: 
@@ -68,5 +74,14 @@ class Server:
         print("closing client socket")
         client_socket.close()
 
+    def _on_leader_request(self, leader_socket: socket) -> None:
+        while True:
+            data = leader_socket.recv(1024)
 
+            if len(data) == 0:
+                break
+            
+            print(f"received request from leader {leader_socket.getsockname()}: {data}")
 
+        print("closing leader socket")
+        leader_socket.close()

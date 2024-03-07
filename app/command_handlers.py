@@ -1,6 +1,6 @@
 from socket import socket
 from app.functions import encode_simple_string, encode_bulk_string
-from app.constants import ENCODING, SERVER_ROLE
+from app.constants import ENCODING, ROLE, LEADER_ROLE, REPLID, REPLOFFSET
 from time import time
 
 def handle_ping(socket: socket, args: list[bytes]) -> None:
@@ -40,4 +40,10 @@ def handle_get(socket: socket, args: list[bytes], database: dict) -> None:
     socket.sendall(response)
 
 def handle_info(socket: socket, args: list[bytes], config: dict) -> None:
-    socket.sendall(encode_bulk_string([f"role:{config[SERVER_ROLE]}"]))
+    info = [f"{ROLE}:{config[ROLE]}"]
+    
+    if config[ROLE] == LEADER_ROLE:
+        info.append(f"{REPLID}:{config[REPLID]}")
+        info.append(f"{REPLOFFSET}:{config[REPLOFFSET]}")
+
+    socket.sendall(encode_bulk_string(info))

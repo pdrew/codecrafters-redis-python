@@ -2,6 +2,7 @@ from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from threading import Thread
 from app.functions import *
 from app.command_handlers import *
+from app.constants import *
 
 class Server:
     def __init__(self, config: dict) -> None:
@@ -28,6 +29,17 @@ class Server:
 
                 thread = Thread(target=self._on_client_request, args=(client_socket, addr), daemon=True)
                 thread.start()
+
+    def _send_handshake(self) -> None:
+        s = socket(AF_INET, SOCK_STREAM)
+        s.connect((self.config[LEADER_HOST], self.config[LEADER_PORT]))
+
+        payload = ["PING"]
+
+        for p in payload:
+            s.sendall(encode_array(p))
+            response = s.recv(1024)
+            print(response)
 
     def _on_client_request(self, client_socket: socket, addr: tuple[str, int]) -> None:
         while True: 

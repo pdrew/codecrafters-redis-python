@@ -47,3 +47,8 @@ def encode_bulk_string(value: list[str]) -> bytes:
     bulk_string = "\r\n".join(value)
         
     return f"${len(bulk_string)}\r\n{bulk_string}\r\n".encode(ENCODING)
+
+def encode_array(value: list[object]) -> bytes:
+    elements = ("\r\n").join([f"${len(s)}\r\n{s}" for s in value])
+
+    return f"*{len(value)}\r\n{elements}\r\n".encode(ENCODING)

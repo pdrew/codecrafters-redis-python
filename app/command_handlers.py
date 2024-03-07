@@ -42,7 +42,7 @@ def handle_get(socket: socket, args: list[bytes], database: dict) -> None:
 def handle_info(socket: socket, args: list[bytes], config: dict) -> None:
     info = [f"{ROLE}:{config[ROLE]}"]
     
-    if config[ROLE] == LEADER_ROLE:
+    if config[ROLE] is LEADER_ROLE:
         info.append(f"{REPLID}:{config[REPLID]}")
         info.append(f"{REPLOFFSET}:{config[REPLOFFSET]}")
 

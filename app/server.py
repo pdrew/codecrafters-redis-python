@@ -17,6 +17,9 @@ class Server:
         }
 
     def start(self, port: int) -> None:
+        if self.config[ROLE] is FOLLOWER_ROLE:
+            self._send_handshake()
+
         with socket(AF_INET, SOCK_STREAM) as s:
             s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
             s.bind(('', port))

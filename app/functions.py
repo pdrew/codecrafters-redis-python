@@ -21,7 +21,6 @@ def decode(buffer: RESPBuffer):
     if first_char == b'*':
         n = int(buffer.partition(b'\r\n').decode())
         return [decode(buffer) for _ in range(n)]
-                    
     elif first_char == b'$':
         n = int(buffer.partition(b'\r\n'))
         bulk_string = buffer.read(n)
@@ -45,6 +44,6 @@ def encode_bulk_string(value: list[str]) -> bytes:
     if not value:
         return "$-1\r\n".encode(ENCODING)
 
-    bulk_string = ("\r\n").join(value.args)
+    bulk_string = "\r\n".join(value)
         
     return f"${len(bulk_string)}\r\n{bulk_string}\r\n".encode(ENCODING)

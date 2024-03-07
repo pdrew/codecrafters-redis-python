@@ -1,18 +1,17 @@
-# Uncomment this to pass the first stage
+import argparse
 from app.server import Server
 
 def main():
-    # You can use print statements as follows for debugging, they'll be visible when running tests.
-    print("Logs from your program will appear here!")
+    parser = argparse.ArgumentParser(description="Redis clone")
 
-    # Uncomment this to pass the first stage
-    #
-    port = 6379
+    parser.add_argument("--port", type=int, default=6379, help="Port the server listens on")
+
+    args = parser.parse_args()
 
     server = Server()
 
     try:
-        server.start(port)
+        server.start(args.port)
     except KeyboardInterrupt:
         print("\nCaught KeyboardInterrupt. Shutting down.")
 

@@ -4,15 +4,15 @@ from app.functions import *
 from app.command_handlers import *
 
 class Server:
-    def __init__(self) -> None:
+    def __init__(self, config: dict) -> None:
+        self.config = config
         self.database = {}
-
         self.handlers = {
             b'PING': [handle_ping],
             b'ECHO': [handle_echo],
             b'SET': [lambda socket, args: handle_set(socket, args, self.database)],
             b'GET': [lambda socket, args: handle_get(socket, args, self.database)],
-            b'INFO': [handle_info]
+            b'INFO': [lambda socket, args: handle_info(socket, args, self.config)],
         }
 
     def start(self, port: int) -> None:

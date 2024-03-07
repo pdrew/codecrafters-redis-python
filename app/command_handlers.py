@@ -51,3 +51,7 @@ def handle_info(socket: socket, args: list[bytes], config: dict) -> None:
 def handle_replconf(socket: socket, args: list[bytes], config: dict) -> None:
     if config[ROLE] is LEADER_ROLE:
         socket.sendall(encode_simple_string("OK"))
+
+def handle_psync(socket: socket, args: list[bytes], config: dict) -> None:
+    if config[ROLE] is LEADER_ROLE:
+        socket.sendall(encode_simple_string(f"FULLRESYNC {config[REPLID]} {config[REPLOFFSET]}"))

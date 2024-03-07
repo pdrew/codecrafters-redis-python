@@ -47,3 +47,7 @@ def handle_info(socket: socket, args: list[bytes], config: dict) -> None:
         info.append(f"{REPLOFFSET}:{config[REPLOFFSET]}")
 
     socket.sendall(encode_bulk_string(info))
+
+def handle_replconf(socket: socket, args: list[bytes], config: dict) -> None:
+    if config[ROLE] is LEADER_ROLE:
+        socket.sendall(encode_simple_string("OK"))

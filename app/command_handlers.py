@@ -1,6 +1,6 @@
 from socket import socket
-from app.functions import encode_simple_string, encode_bulk_string
-from app.constants import ENCODING, ROLE, LEADER_ROLE, REPLID, REPLOFFSET
+from app.functions import encode_simple_string, encode_bulk_string, encode_rdb_file
+from app.constants import ENCODING, ROLE, LEADER_ROLE, REPLID, REPLOFFSET, EMPTY_RDB_FILE_B64
 from time import time
 
 def handle_ping(socket: socket, args: list[bytes]) -> None:
@@ -55,3 +55,4 @@ def handle_replconf(socket: socket, args: list[bytes], config: dict) -> None:
 def handle_psync(socket: socket, args: list[bytes], config: dict) -> None:
     if config[ROLE] is LEADER_ROLE:
         socket.sendall(encode_simple_string(f"FULLRESYNC {config[REPLID]} {config[REPLOFFSET]}"))
+        socket.sendall(encode_rdb_file(EMPTY_RDB_FILE_B64))

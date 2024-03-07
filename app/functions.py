@@ -1,4 +1,5 @@
 from app.constants import ENCODING
+from base64 import b64decode
 
 class RESPBuffer:
     def __init__(self, buffer):
@@ -52,3 +53,6 @@ def encode_array(value: list[object]) -> bytes:
     elements = ("\r\n").join([f"${len(str(s))}\r\n{s}" for s in value])
 
     return f"*{len(value)}\r\n{elements}\r\n".encode(ENCODING)
+
+def encode_rdb_file(contents_b64: str) -> bytes:
+    f"${len(b64decode(contents_b64))}\r\n".encode(ENCODING) + b64decode(contents_b64)

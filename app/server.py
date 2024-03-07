@@ -41,7 +41,6 @@ class Server:
             ["PING"],
             ["REPLCONF", "listening-port", port],
             ["REPLCONF", "capa", "psync2"],
-            ["REPLCONF", "capa", "psync2"],
         ]
 
         for p in payload:
@@ -51,7 +50,7 @@ class Server:
 
         s.sendall(encode_array(["PSYNC", "?", "-1"]))
 
-        thread = Thread(target=self._on_client_request, args=(s), daemon=True)
+        thread = Thread(target=self._on_leader_request, args=(s), daemon=True)
         thread.start()
 
     def _on_client_request(self, client_socket: socket, addr: tuple[str, int]) -> None:

@@ -5,9 +5,13 @@ from app.command_handlers import *
 
 class Server:
     def __init__(self) -> None:
+        self.database = {}
+
         self.handlers = {
             b'PING': [handle_ping],
             b'ECHO': [handle_echo],
+            b'SET': [lambda socket, args: handle_set(socket, args, self.database)],
+            b'GET': [lambda socket, args: handle_get(socket, args, self.database)],
         }
 
     def start(self, port: int) -> None:

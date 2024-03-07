@@ -33,11 +33,18 @@ def decode(buffer: RESPBuffer):
     else:
         raise Exception(f"Unknown RESP type: {first_char}")
 
-def encode_simple_string(obj: object) -> bytes:
-    return f"+{obj}\r\n".encode(ENCODING)
-
 def decode_command(buffer: RESPBuffer) -> tuple[str, list[str]]:
     decoded = decode(buffer)
 
     return decoded[0].upper(), decoded[1:]
 
+def encode_simple_string(value: str) -> bytes:
+    return f"+{value}\r\n".encode(ENCODING)
+
+def encode_bulk_string(value: list[str]) -> bytes:
+    if not value:
+        return "$-1\r\n".encode(ENCODING)
+
+    bulk_string = ("\r\n").join(value.args)
+        
+    return f"${len(bulk_string)}\r\n{bulk_string}\r\n".encode(ENCODING)

@@ -37,7 +37,9 @@ class Server:
         s = socket(AF_INET, SOCK_STREAM)
         s.connect((self.config[LEADER_HOST], self.config[LEADER_PORT]))
 
-        payload = ["PING"]
+        payload = [
+            ["PING"],
+        ]
 
         for p in payload:
             s.sendall(encode_array(p))

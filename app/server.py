@@ -15,9 +15,9 @@ class Server:
             'SET': [lambda socket, args: handle_set(socket, args, self._database)],
             'GET': [lambda socket, args: handle_get(socket, args, self._database)],
             'INFO': [lambda socket, args: handle_info(socket, args, self._config)],
-            'REPLCONF': [lambda socket, args: handle_replconf(socket, args, self._config)],
+            'REPLCONF': [lambda socket, args: handle_replconf(socket, args, self._config, self._replicas)],
             'PSYNC': [lambda socket, args: handle_psync(socket, args, self._config, self._replicas)],
-            'WAIT': [lambda socket, args: handle_wait(socket, args, self._replicas)],
+            'WAIT': [lambda socket, args: handle_wait(socket, args, self._config, self._replicas)],
         }
 
     def start(self, port: int) -> None:
@@ -67,7 +67,7 @@ class Server:
             print(f"received request from client {addr}: {data}")
 
             buffer = RESPBuffer(data)
-            resp_socket = RESPSocket(client_socket)
+            resp_socket = RESPSocket(client_socket, addr)
 
             while buffer.is_not_empty():
                 command, args = decode_command(buffer)
@@ -78,11 +78,14 @@ class Server:
                 for handler in self._handlers[command]:
                     handler(resp_socket, args)
 
-                if command in WRITE_COMMANDS:
-                    for i, replica_socket in enumerate(self._replicas):
-                        print(f"propagating {command} command to replica {i}: {replica_socket.getsockname()}")
-                        print(encode_array([command] + args))
+                if command in WRITE_COMMANDS and self._replicas:
+                    for replica_socket, _ in self._replicas.values():
+                        print(f"propagating {command} command to replica {replica_socket.get_addr()}")
                         replica_socket.sendall(encode_array([command] + args))
+                    
+                    offset_increment = len(encode_array([command] + args))
+                    print(f"incrementing leader offset {self._config[REPLOFFSET]} by {offset_increment}")
+                    self._config[REPLOFFSET] += offset_increment
 
         print("closing client socket")
         client_socket.close()
@@ -104,12 +107,13 @@ class Server:
                 if command not in self._handlers:
                     continue
 
-                resp_socket = RESPSocket(leader_socket) if command in LEADER_COMMANDS else NullSocket() 
+                resp_socket = RESPSocket(leader_socket, leader_socket.getsockname()) if command in LEADER_COMMANDS else NullSocket() 
 
                 for handler in self._handlers[command]:
                     handler(resp_socket, args)
 
                 offset_increment = len(encode_array([command] + args))
+                print(f"incrementing offset {self._config[REPLOFFSET]} by {offset_increment}")
                 self._config[REPLOFFSET] += offset_increment
 
         print("closing leader socket")

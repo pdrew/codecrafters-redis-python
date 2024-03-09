@@ -1,7 +1,6 @@
-from socket import socket
 from app.resp import *
 from app.constants import *
-from time import time
+from time import time, sleep
 
 def handle_ping(socket: RESPSocket, args: list[str]) -> None:
     response = encode_simple_string("PONG")
@@ -48,18 +47,40 @@ def handle_info(socket: RESPSocket, args: list[str], config: dict) -> None:
 
     socket.sendall(encode_bulk_string(info))
 
-def handle_replconf(socket: RESPSocket, args: list[str], config: dict) -> None:
+def handle_replconf(socket: RESPSocket, args: list[str], config: dict, replicas: dict[tuple[str, int], tuple[RESPSocket, int]]) -> None:
     if len(args) > 1 and args[0].upper() == "GETACK":
         socket.sendall(encode_array(["REPLCONF", "ACK", config[REPLOFFSET]]))
+    elif len(args) > 1 and args[0].upper() == "ACK":
+        if socket.get_addr() in replicas:
+            replicas[socket.get_addr()] = (socket, int(args[1]))
     elif config[ROLE] is LEADER_ROLE:
         socket.sendall(encode_simple_string("OK"))
 
-def handle_psync(socket: RESPSocket, args: list[str], config: dict[str, str|int], replicas: dict[socket, int]) -> None:
+def handle_psync(socket: RESPSocket, args: list[str], config: dict[str, str|int], replicas: dict[tuple[str, int], tuple[RESPSocket, int]]) -> None:
     if config[ROLE] is LEADER_ROLE:
         socket.sendall(encode_simple_string(f"FULLRESYNC {config[REPLID]} {config[REPLOFFSET]}"))
         socket.sendall(encode_rdb_file(EMPTY_RDB_FILE_B64))
-        print(f"adding replica: {socket.getsockname()}")
-        replicas.setdefault(socket, 0)
+        print(f"adding replica: {socket.get_addr()}")
+        replicas.setdefault(socket.get_addr(), (socket, 0))
     
-def handle_wait(socket: RESPSocket, args: list[str], relicas: dict[RESPSocket, int]) -> None:
-    socket.sendall(encode_integer(len(relicas)))
+def handle_wait(socket: RESPSocket, args: list[str], config: dict[str, str|int], replicas: dict[tuple[str, int], tuple[RESPSocket, int]]) -> None:
+    wait_ms = int(args[1]) if len(args) > 1 else 0
+    timeout = (time() * 1000) + wait_ms
+    within_timeout = lambda : (time() * 1000) < timeout if wait_ms > 0 else True
+
+    acknowledged = 0
+    min_acknowledged = int(args[0])
+
+    for replica_socket, _ in replicas.values():
+        replica_socket.sendall(encode_array(["REPLCONF", "GETACK", "*"]))
+
+    while within_timeout():
+        acknowledged = sum([1 if offset >= config[REPLOFFSET] else 0 for _, offset in replicas.values()])
+        print(f"{acknowledged} of {len(replicas)} acknowledged. Min: {min_acknowledged}")
+
+        if acknowledged >= min(min_acknowledged, len(replicas)):
+            break
+        
+        sleep(0.1)
+
+    socket.sendall(encode_integer(acknowledged))

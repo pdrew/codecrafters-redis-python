@@ -3,14 +3,15 @@ from base64 import b64decode
 from socket import socket
 
 class RESPSocket:
-    def __init__(self, socket: socket) -> None:
+    def __init__(self, socket: socket, addr: tuple[str, int]) -> None:
         self._socket = socket
+        self._addr = addr
      
     def sendall(self, payload: bytes) -> None:
         self._socket.sendall(payload)
 
-    def getsockname(self) -> tuple[str, int]:
-        return self._socket.getsockname()
+    def get_addr(self) -> tuple[str, int]:
+        return self._addr
 
 class NullSocket(RESPSocket):
     def __init__(self) -> None:

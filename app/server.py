@@ -108,5 +108,8 @@ class Server:
                 for handler in self._handlers[command]:
                     handler(resp_socket, args)
 
+                offset_increment = len(encode_array([command] + args))
+                self._config[REPLOFFSET] += offset_increment
+
         print("closing leader socket")
         leader_socket.close()

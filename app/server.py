@@ -16,7 +16,8 @@ class Server:
             'GET': [lambda socket, args: handle_get(socket, args, self._database)],
             'INFO': [lambda socket, args: handle_info(socket, args, self._config)],
             'REPLCONF': [lambda socket, args: handle_replconf(socket, args, self._config)],
-            'PSYNC': [lambda socket, args: handle_psync(socket, args, self._config, self._replicas)]
+            'PSYNC': [lambda socket, args: handle_psync(socket, args, self._config, self._replicas)],
+            'WAIT': [handle_wait],
         }
 
     def start(self, port: int) -> None:

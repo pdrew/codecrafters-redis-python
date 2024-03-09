@@ -1,6 +1,6 @@
 from socket import socket
-from app.resp import encode_simple_string, encode_bulk_string, encode_rdb_file, encode_array, RESPSocket
-from app.constants import ROLE, LEADER_ROLE, REPLID, REPLOFFSET, EMPTY_RDB_FILE_B64
+from app.resp import *
+from app.constants import *
 from time import time
 
 def handle_ping(socket: RESPSocket, args: list[str]) -> None:
@@ -60,3 +60,6 @@ def handle_psync(socket: RESPSocket, args: list[str], config: dict[str, str|int]
         socket.sendall(encode_rdb_file(EMPTY_RDB_FILE_B64))
         print(f"adding replica: {socket.getsockname()}")
         replicas.setdefault(socket, 0)
+    
+def handle_wait(socket: RESPSocket, args: list[str]) -> None:
+    socket.sendall(encode_integer(0))

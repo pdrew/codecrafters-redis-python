@@ -61,5 +61,5 @@ def handle_psync(socket: RESPSocket, args: list[str], config: dict[str, str|int]
         print(f"adding replica: {socket.getsockname()}")
         replicas.setdefault(socket, 0)
     
-def handle_wait(socket: RESPSocket, args: list[str]) -> None:
-    socket.sendall(encode_integer(0))
+def handle_wait(socket: RESPSocket, args: list[str], relicas: dict[RESPSocket, int]) -> None:
+    socket.sendall(encode_integer(len(relicas)))

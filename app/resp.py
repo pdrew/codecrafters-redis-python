@@ -1,5 +1,26 @@
 from app.constants import ENCODING
 from base64 import b64decode
+from socket import socket
+
+class RESPSocket:
+    def __init__(self, socket: socket) -> None:
+        self._socket = socket
+     
+    def sendall(self, payload: bytes) -> None:
+        self._socket.sendall(payload)
+
+    def getsockname(self) -> tuple[str, int]:
+        return self._socket.getsockname()
+
+class NullSocket(RESPSocket):
+    def __init__(self) -> None:
+        pass
+
+    def sendall(self, payload: bytes) -> None:
+        return None
+    
+    def getsockname(self) -> tuple[str, int]:
+        return ("", -1)
 
 class RESPBuffer:
     def __init__(self, buffer):

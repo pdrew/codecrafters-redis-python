@@ -1,6 +1,6 @@
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from threading import Thread
-from app.functions import *
+from app.resp import *
 from app.command_handlers import *
 from app.constants import *
 
@@ -66,6 +66,7 @@ class Server:
             print(f"received request from client {addr}: {data}")
 
             buffer = RESPBuffer(data)
+            resp_socket = RESPSocket(client_socket)
 
             while buffer.is_not_empty():
                 command, args = decode_command(buffer)
@@ -74,7 +75,7 @@ class Server:
                     continue
 
                 for handler in self._handlers[command]:
-                    handler(client_socket, args)
+                    handler(resp_socket, args)
 
                 if command in WRITE_COMMANDS:
                     for i, replica_socket in enumerate(self._replicas):
@@ -102,8 +103,10 @@ class Server:
                 if command not in self._handlers:
                     continue
 
+                resp_socket = RESPSocket(leader_socket) if command in LEADER_COMMANDS else NullSocket() 
+
                 for handler in self._handlers[command]:
-                    handler(leader_socket, args)
+                    handler(resp_socket, args)
 
         print("closing leader socket")
         leader_socket.close()

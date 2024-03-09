@@ -1,5 +1,5 @@
 from socket import socket
-from app.resp import encode_simple_string, encode_bulk_string, encode_rdb_file, RESPSocket
+from app.resp import encode_simple_string, encode_bulk_string, encode_rdb_file, encode_array, RESPSocket
 from app.constants import ROLE, LEADER_ROLE, REPLID, REPLOFFSET, EMPTY_RDB_FILE_B64
 from time import time
 
@@ -49,7 +49,9 @@ def handle_info(socket: RESPSocket, args: list[str], config: dict) -> None:
     socket.sendall(encode_bulk_string(info))
 
 def handle_replconf(socket: RESPSocket, args: list[str], config: dict) -> None:
-    if config[ROLE] is LEADER_ROLE:
+    if len(args) > 1 and args[0].upper() == "GETACK":
+        socket.sendall(encode_array(["REPLCONF", "ACK", config[REPLOFFSET]]))
+    elif config[ROLE] is LEADER_ROLE:
         socket.sendall(encode_simple_string("OK"))
 
 def handle_psync(socket: RESPSocket, args: list[str], config: dict[str, str|int], replicas: dict[socket, int]) -> None:

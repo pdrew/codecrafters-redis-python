@@ -84,3 +84,9 @@ def handle_wait(socket: RESPSocket, args: list[str], config: dict[str, str|int],
         sleep(0.1)
 
     socket.sendall(encode_integer(acknowledged))
+
+def handle_config(socket: RESPSocket, args: list[str], config: dict[str, str|int])-> None:
+    if len(args) > 1 and args[0].upper() == "GET":
+        key = args[1].lower()
+        value = config[key] if key in [RDB_DIR, RDB_FILENAME] else ""
+        socket.sendall(encode_array([key, value]))

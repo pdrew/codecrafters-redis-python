@@ -18,6 +18,7 @@ class Server:
             'REPLCONF': [lambda socket, args: handle_replconf(socket, args, self._config, self._replicas)],
             'PSYNC': [lambda socket, args: handle_psync(socket, args, self._config, self._replicas)],
             'WAIT': [lambda socket, args: handle_wait(socket, args, self._config, self._replicas)],
+            'CONFIG': [lambda socket, args: handle_config(socket, args, self._config)]
         }
 
     def start(self, port: int) -> None:

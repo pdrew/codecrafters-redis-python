@@ -26,7 +26,7 @@ class Database():
         self._data = {}
 
         if filename:
-            self.read_rdb(filename)
+            self._read_rdb(filename)
 
     def set(self, key: str, value: tuple[str, int | None]) -> None:
         self._data[key] = value
@@ -43,7 +43,7 @@ class Database():
     def keys(self) -> list[str]:
         return self._data.keys()
     
-    def read_rdb(self, filename: str) -> None:
+    def _read_rdb(self, filename: str) -> None:
         with open(filename, "rb") as file:
             self._check_magic_string(file)
             self._check_version(file)

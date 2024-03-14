@@ -101,7 +101,7 @@ class Database():
         value = self._parse_string(file)
 
         print(f"KVP {key}: {value}")
-        self._data[key] = value
+        self._data[key] = (value, None)
 
     def _parse_string(self, file: BufferedReader) -> str | int:
         length = self._parse_length(file)

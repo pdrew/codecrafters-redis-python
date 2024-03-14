@@ -73,8 +73,16 @@ class Database():
                 self._parse_resizedb(file)
             case b"\xFE":
                 self._parse_selectdb(file)
+            case b'\xFD':
+                expiry_s = self._parse_expiry_s(file)
+                file.read(1)
+                self._parse_key_value_pair(file, expiry_s * 1000)
+            case b'\xFC':
+                expiry_ms = self._parse_expiry_ms(file)
+                file.read(1)
+                self._parse_key_value_pair(file, expiry_ms)
             case b"\x00":
-                self._parse_key_value_pair(file)
+                self._parse_key_value_pair(file, None)
             case b'\xFF':
                 file.read(8)
                 raise StopIteration
@@ -96,12 +104,23 @@ class Database():
 
         print(f"db_number: {db_number}")
 
-    def _parse_key_value_pair(self, file: BufferedReader) -> None:
+    def _parse_expiry_ms(self, file: BufferedReader) -> int:
+        bytes = file.read(8)
+        expiry = unpack('<Q', bytes)[0]
+
+        return expiry
+    
+    def _parse_expiry_s(self, file: BufferedReader) -> int:
+        bytes = file.read(4)
+        expiry = unpack('<I', bytes)[0]
+
+        return expiry
+
+    def _parse_key_value_pair(self, file: BufferedReader, expiry_ms: int | None) -> None:
         key = self._parse_string(file)
         value = self._parse_string(file)
 
-        print(f"KVP {key}: {value}")
-        self._data[key] = (value, None)
+        self._data[key] = (value, expiry_ms)
 
     def _parse_string(self, file: BufferedReader) -> str | int:
         length = self._parse_length(file)
@@ -114,6 +133,7 @@ class Database():
 
     def _parse_length(self, file: BufferedReader) -> int:
         byte = file.read(1)
+        
         length = unpack("B", byte)[0]
         bits = length >> 6
 

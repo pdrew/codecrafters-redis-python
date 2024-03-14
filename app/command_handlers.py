@@ -1,6 +1,7 @@
 from app.resp import *
 from app.constants import *
 from time import time, sleep
+from app.database import Database
 
 def handle_ping(socket: RESPSocket, args: list[str]) -> None:
     response = encode_simple_string("PONG")
@@ -11,28 +12,28 @@ def handle_echo(socket: RESPSocket, args: list[str]) -> None:
     response = encode_simple_string(message)
     socket.sendall(response)
 
-def handle_set(socket: RESPSocket, args: list[str], database: dict) -> None:
+def handle_set(socket: RESPSocket, args: list[str], database: Database) -> None:
     key = args[0]
     value = args[1]
 
     expiry = (round(time() * 1000) + int(args[3])) if len(args) > 3 and args[2].upper() == 'PX' else None
 
-    database[key] = (value, expiry)
+    database.set(key, (value, expiry))
     response = encode_simple_string("OK")
     socket.sendall(response)
 
-def handle_get(socket: RESPSocket, args: list[str], database: dict) -> None:
+def handle_get(socket: RESPSocket, args: list[str], database: Database) -> None:
     key = args[0]
 
     response = encode_bulk_string(None)
 
-    if key in database:
-        value, expires = database[key]
+    if database.contains(key):
+        value, expires = database.get(key)
 
         current = round(time() * 1000)
 
         if expires and expires < current:
-            del database[key]
+            database.delete(key)
         else:
             response = encode_simple_string(value)
     
@@ -90,3 +91,7 @@ def handle_config(socket: RESPSocket, args: list[str], config: dict[str, str|int
         key = args[1].lower()
         value = config[key] if key in [RDB_DIR, RDB_FILENAME] else ""
         socket.sendall(encode_array([key, value]))
+
+def handle_keys(socket: RESPSocket, args: list[str], database: dict) -> None:
+    keys = encode_array(database.keys())
+    socket.sendall(keys)

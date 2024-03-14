@@ -1,4 +1,5 @@
 import argparse
+import base64
 from app.server import Server
 from app.constants import *
 
@@ -18,10 +19,10 @@ def main():
         leader_host, leader_port = args.replicaof
 
     if args.dir:
-        rdb_dir = args.dir
+        rdb_dir = args.dir.rstrip()
     
     if args.dbfilename:
-        rdb_filename = args.dbfilename
+        rdb_filename = args.dbfilename.rstrip()
 
     config = {
         ROLE:  FOLLOWER_ROLE if args.replicaof else LEADER_ROLE,

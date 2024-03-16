@@ -92,6 +92,14 @@ def handle_config(socket: RESPSocket, args: list[str], config: dict[str, str|int
         value = config[key] if key in [RDB_DIR, RDB_FILENAME] else ""
         socket.sendall(encode_array([key, value]))
 
-def handle_keys(socket: RESPSocket, args: list[str], database: dict) -> None:
+def handle_keys(socket: RESPSocket, args: list[str], database: Database) -> None:
     keys = encode_array(database.keys())
     socket.sendall(keys)
+
+def handle_type(socket: RESPSocket, args: list[str], database: Database) -> None:
+    key = args[0]
+
+    if database.contains(key):
+        socket.sendall(encode_simple_string("string"))
+    else:
+        socket.sendall(encode_simple_string("none"))

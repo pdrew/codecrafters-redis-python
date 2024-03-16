@@ -7,18 +7,9 @@ from app.database import Database
 import os
 
 class Server:
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: dict, database: Database) -> None:
         self._config = config
-
-        filename = None
-
-        if self._config[RDB_DIR] and self._config[RDB_FILENAME]:
-            filename = os.path.join(self._config[RDB_DIR], self._config[RDB_FILENAME])
-            print(f"filename: {filename}")
-            filename = filename if os.path.isfile(filename) else None
-        
-        self._database = Database(filename)
-
+        self._database = database
         self._replicas = {}
         self._handlers = {
             'PING': [handle_ping],
@@ -30,7 +21,8 @@ class Server:
             'PSYNC': [lambda socket, args: handle_psync(socket, args, self._config, self._replicas)],
             'WAIT': [lambda socket, args: handle_wait(socket, args, self._config, self._replicas)],
             'CONFIG': [lambda socket, args: handle_config(socket, args, self._config)],
-            'KEYS': [lambda socket, args: handle_keys(socket, args, self._database)]
+            'KEYS': [lambda socket, args: handle_keys(socket, args, self._database)],
+            'TYPE': [lambda socket, args: handle_type(socket, args, self._database)]
         }
 
     def start(self, port: int) -> None:

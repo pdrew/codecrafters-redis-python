@@ -1,7 +1,8 @@
 import argparse
-import base64
 from app.server import Server
 from app.constants import *
+import os
+from app.database import Database
 
 def main():
     parser = argparse.ArgumentParser(description="Redis clone")
@@ -34,7 +35,15 @@ def main():
         RDB_FILENAME: rdb_filename,
     }
 
-    server = Server(config)
+    filename = None
+
+    if rdb_dir and rdb_filename:
+        filename = os.path.join(rdb_dir, rdb_filename)
+        print(f"filename: {filename}")
+        filename = filename if os.path.isfile(filename) else None
+        
+    database = Database(filename)
+    server = Server(config, database)
 
     try:
         server.start(args.port)

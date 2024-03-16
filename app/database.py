@@ -9,10 +9,10 @@ class Database():
         if filename:
             self._read_rdb(filename)
 
-    def set(self, key: str, value: tuple[str | list[str], int | None]) -> None:
+    def set(self, key: str, value: tuple[str | list[list[str]], int | None]) -> None:
         self._data[key] = value
 
-    def get(self, key: str) -> tuple[str | list[str], int | None]:
+    def get(self, key: str) -> tuple[str | list[list[str]], int | None]:
         return self._data[key]
     
     def delete(self, key: str) -> None:

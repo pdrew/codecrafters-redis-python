@@ -66,6 +66,9 @@ def decode_command(buffer: RESPBuffer) -> tuple[str, list[str]]:
 def encode_simple_string(value: str) -> bytes:
     return f"+{value}\r\n".encode(ENCODING)
 
+def encode_error_string(value: str) -> bytes:
+    return f"-{value}\r\n".encode(ENCODING)
+
 def encode_bulk_string(value: list[str]) -> bytes:
     if not value:
         return "$-1\r\n".encode(ENCODING)

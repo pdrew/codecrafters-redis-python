@@ -100,6 +100,18 @@ def handle_type(socket: RESPSocket, args: list[str], database: Database) -> None
     key = args[0]
 
     if database.contains(key):
-        socket.sendall(encode_simple_string("string"))
+        value = database.get(key)
+        value_type = "string" if isinstance(value[0], str) else "stream"
+        socket.sendall(encode_simple_string(value_type))
     else:
         socket.sendall(encode_simple_string("none"))
+
+def handle_xadd(socket: RESPSocket, args: list[str], database: Database) -> None:
+    key, stream = args[0], args[1:]
+
+    if database.contains(key):
+        stream = database.get(key) + stream
+
+    database.set(key, (stream, None))
+
+    socket.sendall(encode_bulk_string([args[1]]))

@@ -4,7 +4,6 @@ from app.resp import *
 from app.command_handlers import *
 from app.constants import *
 from app.database import Database
-import os
 
 class Server:
     def __init__(self, config: dict, database: Database) -> None:
@@ -22,7 +21,8 @@ class Server:
             'WAIT': [lambda socket, args: handle_wait(socket, args, self._config, self._replicas)],
             'CONFIG': [lambda socket, args: handle_config(socket, args, self._config)],
             'KEYS': [lambda socket, args: handle_keys(socket, args, self._database)],
-            'TYPE': [lambda socket, args: handle_type(socket, args, self._database)]
+            'TYPE': [lambda socket, args: handle_type(socket, args, self._database)],
+            'XADD': [lambda socket, args: handle_xadd(socket, args, self._database)]
         }
 
     def start(self, port: int) -> None:

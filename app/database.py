@@ -1,25 +1,6 @@
 from io import BufferedReader
 from struct import unpack
 from app.constants import *
-
-class Database():
-    def __init__(self) -> None:
-        self._data = {}
-    
-    def set(self, key: str, value: tuple[str, int | None]) -> None:
-        self._data[key] = value
-
-    def get(self, key: str) -> tuple[str, int | None]:
-        return self._data[key]
-    
-    def delete(self, key: str) -> None:
-        del self._data[key]
-
-    def contains(self, key: str) -> bool:
-        return key in self._data
-    
-    def keys(self) -> list[str]:
-        return self._data.keys()
     
 class Database():
     def __init__(self, filename: str | None) -> None:
@@ -28,10 +9,10 @@ class Database():
         if filename:
             self._read_rdb(filename)
 
-    def set(self, key: str, value: tuple[str, int | None]) -> None:
+    def set(self, key: str, value: tuple[str | list[str], int | None]) -> None:
         self._data[key] = value
 
-    def get(self, key: str) -> tuple[str, int | None]:
+    def get(self, key: str) -> tuple[str | list[str], int | None]:
         return self._data[key]
     
     def delete(self, key: str) -> None:

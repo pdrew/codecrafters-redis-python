@@ -107,18 +107,14 @@ def handle_type(socket: RESPSocket, args: list[str], database: Database) -> None
         socket.sendall(encode_simple_string("none"))
 
 def handle_xadd(socket: RESPSocket, args: list[str], database: Database) -> None:
-    key, entry = args[0], args[1:]
-
-    entry_id = entry[0]
+    key, entry_id, entry = args[0], args[1], args[1:]
 
     ms_time, _, seq_no = entry_id.partition("-")
-    ms_time, seq_no = int(ms_time), int(seq_no)
+    ms_time, seq_no = int(ms_time), int(seq_no) if seq_no.isdigit() else seq_no
 
-    if ms_time < 0 or seq_no < 0 or (ms_time == 0 and seq_no == 0):
+    if ms_time < 0 or (isinstance(seq_no, int) and seq_no < 0) or (ms_time == 0 and isinstance(seq_no, int) and seq_no == 0):
         socket.sendall(encode_error_string("ERR The ID specified in XADD must be greater than 0-0"))
         return
-
-    value = [entry]
 
     if database.contains(key):
         stream, _ = database.get(key) 
@@ -127,12 +123,23 @@ def handle_xadd(socket: RESPSocket, args: list[str], database: Database) -> None
         last_ms_time, _, last_seq_no = last_value[0].partition("-")
         last_ms_time, last_seq_no = int(last_ms_time), int(last_seq_no)
 
+        if seq_no == "*":
+            seq_no = last_seq_no + 1 if ms_time == last_ms_time else 0
+            entry_id = f"{ms_time}-{seq_no}"
+            entry[0] = entry_id
+
         if ms_time < last_ms_time or (ms_time == last_ms_time and seq_no <= last_seq_no):
             socket.sendall(encode_error_string("ERR The ID specified in XADD is equal or smaller than the target stream top item"))
             return
 
-        value = stream + value
-        
-    database.set(key, (value, None))
+        stream = stream + [entry]
+    else:
+        if seq_no == "*":
+            seq_no = 1 if ms_time == 0 else 0
+            entry_id = f"{ms_time}-{seq_no}"
+            entry[0] = entry_id
+        stream = [entry]
+
+    database.set(key, (stream, None))
 
     socket.sendall(encode_bulk_string([entry_id]))

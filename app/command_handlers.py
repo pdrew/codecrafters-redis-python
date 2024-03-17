@@ -109,8 +109,13 @@ def handle_type(socket: RESPSocket, args: list[str], database: Database) -> None
 def handle_xadd(socket: RESPSocket, args: list[str], database: Database) -> None:
     key, entry_id, entry = args[0], args[1], args[1:]
 
-    ms_time, _, seq_no = entry_id.partition("-")
-    ms_time, seq_no = int(ms_time), int(seq_no) if seq_no.isdigit() else seq_no
+    if entry_id == "*":
+        ms_time, seq_no = int(time()) * 1000, 0
+        entry_id = f"{ms_time}-{seq_no}"
+        entry[0] = entry_id
+    else:
+        ms_time, _, seq_no = entry_id.partition("-")
+        ms_time, seq_no = int(ms_time), int(seq_no) if seq_no.isdigit() else seq_no
 
     if ms_time < 0 or (isinstance(seq_no, int) and seq_no < 0) or (ms_time == 0 and isinstance(seq_no, int) and seq_no == 0):
         socket.sendall(encode_error_string("ERR The ID specified in XADD must be greater than 0-0"))
@@ -118,9 +123,9 @@ def handle_xadd(socket: RESPSocket, args: list[str], database: Database) -> None
 
     if database.contains(key):
         stream, _ = database.get(key) 
-        last_value = stream[len(stream) - 1]
+        last_entry = stream[-1]
 
-        last_ms_time, _, last_seq_no = last_value[0].partition("-")
+        last_ms_time, _, last_seq_no = last_entry[0].partition("-")
         last_ms_time, last_seq_no = int(last_ms_time), int(last_seq_no)
 
         if seq_no == "*":

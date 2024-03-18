@@ -87,3 +87,16 @@ def encode_rdb_file(contents_b64: str) -> bytes:
 
 def encode_integer(value: int) -> bytes:
     return f":{value}\r\n".encode(ENCODING)
+
+def encode_stream(stream: list[list[str]]) -> bytes:
+    stream_str = f"*{len(stream)}\r\n"
+
+    for entry in stream:
+        stream_str += "*2\r\n"
+        entry_id, entry = entry[0], entry[1:]
+        stream_str += f"${len(entry_id)}\r\n{entry_id}\r\n*{len(entry)}\r\n"
+
+        for value in entry:
+            stream_str += f"${len(value)}\r\n{value}\r\n"
+
+    return stream_str.encode(ENCODING)

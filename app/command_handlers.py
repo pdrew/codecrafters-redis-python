@@ -2,6 +2,7 @@ from app.resp import *
 from app.constants import *
 from time import time, sleep
 from app.database import Database
+import sys
 
 def handle_ping(socket: RESPSocket, args: list[str]) -> None:
     response = encode_simple_string("PONG")
@@ -148,3 +149,31 @@ def handle_xadd(socket: RESPSocket, args: list[str], database: Database) -> None
     database.set(key, (stream, None))
 
     socket.sendall(encode_bulk_string([entry_id]))
+
+def handle_xrange(socket: RESPSocket, args: list[str], database: Database) -> None:
+    key, start, end = args
+
+    start_ms_time, _, start_seq_no = start.partition("-")
+    start_ms_time, start_seq_no = int(start_ms_time), int(start_seq_no) if start_seq_no.isdigit() else 0
+
+    end_ms_time, _, end_seq_no = end.partition("-")
+    end_ms_time, end_seq_no = int(end_ms_time), int(end_seq_no) if end_seq_no.isdigit() else sys.maxsize
+
+    if database.contains(key):
+        stream, _ = database.get(key)
+        
+        stream_range = []
+
+        for entry in stream:
+            entry_id = entry[0]
+            ms_time, seq_no = [int(e) for e in entry_id.split("-")]
+
+            if ms_time >= start_ms_time and seq_no >= start_seq_no and ms_time <= end_ms_time and seq_no <= end_seq_no:
+                stream_range.append(entry)
+        
+        socket.sendall(encode_stream(stream_range))
+    else:
+        socket.sendall(encode_error_string(f"ERR stream with key {key} not found"))
+
+
+

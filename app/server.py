@@ -22,7 +22,8 @@ class Server:
             'CONFIG': [lambda socket, args: handle_config(socket, args, self._config)],
             'KEYS': [lambda socket, args: handle_keys(socket, args, self._database)],
             'TYPE': [lambda socket, args: handle_type(socket, args, self._database)],
-            'XADD': [lambda socket, args: handle_xadd(socket, args, self._database)]
+            'XADD': [lambda socket, args: handle_xadd(socket, args, self._database)],
+            'XRANGE': [lambda socket, args: handle_xrange(socket, args, self._database)]
         }
 
     def start(self, port: int) -> None:

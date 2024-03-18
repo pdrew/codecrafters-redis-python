@@ -159,8 +159,11 @@ def handle_xrange(socket: RESPSocket, args: list[str], database: Database) -> No
         start_ms_time, _, start_seq_no = start.partition("-")
         start_ms_time, start_seq_no = int(start_ms_time), int(start_seq_no) if start_seq_no.isdigit() else 0
 
-    end_ms_time, _, end_seq_no = end.partition("-")
-    end_ms_time, end_seq_no = int(end_ms_time), int(end_seq_no) if end_seq_no.isdigit() else sys.maxsize
+    if end == "+":
+        end_ms_time, end_seq_no = sys.maxsize, sys.maxsize
+    else:
+        end_ms_time, _, end_seq_no = end.partition("-")
+        end_ms_time, end_seq_no = int(end_ms_time), int(end_seq_no) if end_seq_no.isdigit() else sys.maxsize
 
     if database.contains(key):
         stream, _ = database.get(key)

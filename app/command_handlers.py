@@ -191,26 +191,43 @@ def handle_xread(socket: RESPSocket, args: list[str], database: Database) -> Non
         socket.sendall(encode_error_string("ERR invalid number of arguments for XREAD"))
         return 
 
-    if wait_ms and wait_ms.isdigit():
-        wait_ms = int(wait_ms)
-        if wait_ms > 0: 
-            sleep(wait_ms / 1000)
-
     n = len(xread_args) // 2
     keys = xread_args[:n]
     starts = xread_args[n:]
 
     last_response_length, response = -1, b""
 
+    timeout = (time() * 1000)
+    
+    if wait_ms and wait_ms.isdigit():
+        wait_ms = int(wait_ms)
+        timeout += wait_ms
+
+    def should_wait() -> bool:
+        if wait_ms == 0: 
+            if last_response_length > -1 and len(response) > last_response_length:
+                return False
+            else:
+                return True
+        return (time() * 1000) < timeout
+
     while True:
         for i in range(n):
             key, start = keys[i], starts[i]
 
-            start_ms_time, _, start_seq_no = start.partition("-")
-            start_ms_time, start_seq_no = int(start_ms_time), int(start_seq_no) if start_seq_no.isdigit() else 0
+            if start == "$":
+                start_ms_time, start_seq_no = 0, 0
+            else:   
+                start_ms_time, _, start_seq_no = start.partition("-")
+                start_ms_time, start_seq_no = int(start_ms_time), int(start_seq_no) if start_seq_no.isdigit() else 0
 
             if database.contains(key):
                 stream, _ = database.get(key)
+
+                if start == "$":
+                    entry = stream[-1]
+                    starts[i] = entry[0]
+                    continue
 
                 stream_range = []
 
@@ -224,9 +241,7 @@ def handle_xread(socket: RESPSocket, args: list[str], database: Database) -> Non
                 if stream_range:
                     response += f"*2\r\n${len(key)}\r\n{key}\r\n".encode(ENCODING) + encode_stream(stream_range)
     
-        if wait_ms == 0:
-            if last_response_length > -1 and len(response) > last_response_length:
-                break
+        if should_wait():
             last_response_length, response = len(response), b""
             sleep(0.1)
         else:

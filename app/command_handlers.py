@@ -179,18 +179,27 @@ def handle_xrange(socket: RESPSocket, args: list[str], database: Database) -> No
         
         socket.sendall(encode_stream(stream_range))
     else:
-        socket.sendall(encode_error_string(f"ERR stream with key {key} not found"))
+        socket.sendall(encode_bulk_string(None))
 
 def handle_xread(socket: RESPSocket, args: list[str], database: Database) -> None:
-    if (len(args) - 1) % 2 != 0:
+    if args[0].upper() == "BLOCK":
+        _, sleep_ms, xread_args = args[0], args[1], args[3:]
+    else:
+        _, sleep_ms, xread_args = args[0], None, args[1:]
+
+    if len(xread_args) % 2 != 0:
         socket.sendall(encode_error_string("ERR invalid number of arguments for XREAD"))
         return 
     
-    n = (len(args) - 1) // 2
-    keys = args[1:n + 1]
-    starts = args[n + 1:]
+    if sleep_ms:
+        sleep_ms = int(sleep_ms) if sleep_ms.isdigit() else 0
+        sleep(sleep_ms / 1000)
+    
+    n = len(xread_args) // 2
+    keys = xread_args[:n]
+    starts = xread_args[n:]
 
-    response = f"*{n}\r\n".encode(ENCODING)
+    response = b""
 
     for i in range(n):
         key, start = keys[i], starts[i]
@@ -210,10 +219,10 @@ def handle_xread(socket: RESPSocket, args: list[str], database: Database) -> Non
                 if ms_time > start_ms_time or (ms_time == start_ms_time and seq_no > start_seq_no):
                     stream_range.append(entry)
             
-            response += f"*2\r\n${len(key)}\r\n{key}\r\n".encode(ENCODING) + encode_stream(stream_range)
-        else:
-            socket.sendall(encode_error_string(f"ERR stream with key {key} not found"))
-            return
+            if stream_range:
+                response += f"*2\r\n${len(key)}\r\n{key}\r\n".encode(ENCODING) + encode_stream(stream_range)
+    
+    response = f"*{n}\r\n".encode(ENCODING) + response if response else encode_bulk_string(None)
 
-    socket.sendall(response)       
+    socket.sendall(response)
 

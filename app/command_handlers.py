@@ -182,26 +182,38 @@ def handle_xrange(socket: RESPSocket, args: list[str], database: Database) -> No
         socket.sendall(encode_error_string(f"ERR stream with key {key} not found"))
 
 def handle_xread(socket: RESPSocket, args: list[str], database: Database) -> None:
-    _, key, start = args
+    if (len(args) - 1) % 2 != 0:
+        socket.sendall(encode_error_string("ERR invalid number of arguments for XREAD"))
+        return 
+    
+    n = (len(args) - 1) // 2
+    keys = args[1:n + 1]
+    starts = args[n + 1:]
 
-    start_ms_time, _, start_seq_no = start.partition("-")
-    start_ms_time, start_seq_no = int(start_ms_time), int(start_seq_no) if start_seq_no.isdigit() else 0
+    response = f"*{n}\r\n".encode(ENCODING)
 
-    if database.contains(key):
-        stream, _ = database.get(key)
+    for i in range(n):
+        key, start = keys[i], starts[i]
 
-        stream_range = []
+        start_ms_time, _, start_seq_no = start.partition("-")
+        start_ms_time, start_seq_no = int(start_ms_time), int(start_seq_no) if start_seq_no.isdigit() else 0
 
-        for entry in stream:
-            entry_id = entry[0]
-            ms_time, seq_no = [int(e) for e in entry_id.split("-")]
+        if database.contains(key):
+            stream, _ = database.get(key)
 
-            if ms_time > start_ms_time or (ms_time == start_ms_time and seq_no > start_seq_no):
-                  stream_range.append(entry)
-        
-        response = f"*1\r\n*2\r\n${len(key)}\r\n{key}\r\n".encode(ENCODING) + encode_stream(stream_range)
+            stream_range = []
 
-        socket.sendall(response)
-    else:
-        socket.sendall(encode_error_string(f"ERR stream with key {key} not found"))        
+            for entry in stream:
+                entry_id = entry[0]
+                ms_time, seq_no = [int(e) for e in entry_id.split("-")]
+
+                if ms_time > start_ms_time or (ms_time == start_ms_time and seq_no > start_seq_no):
+                    stream_range.append(entry)
+            
+            response += f"*2\r\n${len(key)}\r\n{key}\r\n".encode(ENCODING) + encode_stream(stream_range)
+        else:
+            socket.sendall(encode_error_string(f"ERR stream with key {key} not found"))
+            return
+
+    socket.sendall(response)       
 

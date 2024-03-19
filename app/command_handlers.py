@@ -183,45 +183,55 @@ def handle_xrange(socket: RESPSocket, args: list[str], database: Database) -> No
 
 def handle_xread(socket: RESPSocket, args: list[str], database: Database) -> None:
     if args[0].upper() == "BLOCK":
-        _, sleep_ms, xread_args = args[0], args[1], args[3:]
+        _, wait_ms, xread_args = args[0], args[1], args[3:]
     else:
-        _, sleep_ms, xread_args = args[0], None, args[1:]
+        _, wait_ms, xread_args = args[0], None, args[1:]
 
     if len(xread_args) % 2 != 0:
         socket.sendall(encode_error_string("ERR invalid number of arguments for XREAD"))
         return 
-    
-    if sleep_ms:
-        sleep_ms = int(sleep_ms) if sleep_ms.isdigit() else 0
-        sleep(sleep_ms / 1000)
-    
+
+    if wait_ms and wait_ms.isdigit():
+        wait_ms = int(wait_ms)
+        if wait_ms > 0: 
+            sleep(wait_ms / 1000)
+
     n = len(xread_args) // 2
     keys = xread_args[:n]
     starts = xread_args[n:]
 
-    response = b""
+    last_response_length, response = -1, b""
 
-    for i in range(n):
-        key, start = keys[i], starts[i]
+    while True:
+        for i in range(n):
+            key, start = keys[i], starts[i]
 
-        start_ms_time, _, start_seq_no = start.partition("-")
-        start_ms_time, start_seq_no = int(start_ms_time), int(start_seq_no) if start_seq_no.isdigit() else 0
+            start_ms_time, _, start_seq_no = start.partition("-")
+            start_ms_time, start_seq_no = int(start_ms_time), int(start_seq_no) if start_seq_no.isdigit() else 0
 
-        if database.contains(key):
-            stream, _ = database.get(key)
+            if database.contains(key):
+                stream, _ = database.get(key)
 
-            stream_range = []
+                stream_range = []
 
-            for entry in stream:
-                entry_id = entry[0]
-                ms_time, seq_no = [int(e) for e in entry_id.split("-")]
+                for entry in stream:
+                    entry_id = entry[0]
+                    ms_time, seq_no = [int(e) for e in entry_id.split("-")]
 
-                if ms_time > start_ms_time or (ms_time == start_ms_time and seq_no > start_seq_no):
-                    stream_range.append(entry)
-            
-            if stream_range:
-                response += f"*2\r\n${len(key)}\r\n{key}\r\n".encode(ENCODING) + encode_stream(stream_range)
+                    if ms_time > start_ms_time or (ms_time == start_ms_time and seq_no > start_seq_no):
+                        stream_range.append(entry)
+                
+                if stream_range:
+                    response += f"*2\r\n${len(key)}\r\n{key}\r\n".encode(ENCODING) + encode_stream(stream_range)
     
+        if wait_ms == 0:
+            if last_response_length > -1 and len(response) > last_response_length:
+                break
+            last_response_length, response = len(response), b""
+            sleep(0.1)
+        else:
+            break
+            
     response = f"*{n}\r\n".encode(ENCODING) + response if response else encode_bulk_string(None)
 
     socket.sendall(response)
